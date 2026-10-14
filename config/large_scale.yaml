@@ -1,0 +1,66 @@
+seed: 42   # fix for reproducibility; change to get a different grid
+
+storage:
+  tape_bandwidth: 500
+  tape_bandwidth_unit: MB/s
+  eviction:
+    age_s: 3600
+    extra_replicas: 0.5
+    downstream: 3.0
+    recompute: 1.5
+    no_tape_penalty: 1000.0
+    warm_threshold_s: 3600
+    cold_threshold_s: 86400
+
+site_generation:
+  tiers:
+    - name: Tier1
+      count: 3
+      num_cpus:         {dist: randint,   low: 48,  high: 64}
+      cpu_speed_gflops: {dist: uniform,   low: 22.0, high: 28.0}
+      disk_capacity_tb: 1000000
+
+    - name: Tier2
+      count: 17
+      num_cpus:         {dist: randint,   low: 24,  high: 48}
+      cpu_speed_gflops: {dist: uniform,   low: 15.0, high: 22.0}
+      disk_capacity_tb: 1000000
+
+    - name: Tier3
+      count: 80
+      num_cpus:         {dist: randint,   low: 8,   high: 24}
+      cpu_speed_gflops: {dist: uniform,   low: 8.0,  high: 15.0}
+      disk_capacity_tb: 1000000
+
+network_generation:
+  model: tier_matrix
+  lan_multiplier: 10
+  noise_sigma: 0.25       # ~25% coefficient of variation in log space
+  tier_matrix:
+    Tier1-Tier1: 150
+    Tier1-Tier2:  80
+    Tier1-Tier3:  30
+    Tier2-Tier2:  50
+    Tier2-Tier3:  20
+    Tier3-Tier3:  10
+
+file_generation:
+  count: 300
+  size_gb:            {dist: lognormal, mean: 4.0, sigma: 1.0}
+  replication_factor: {dist: randint,   low: 1,     high: 2}
+
+task_generation:
+  num_tasks: 6000
+  stages_per_task:     {dist: randint,   low: 2,   high: 3}
+  jobs_per_stage:      {dist: randint,   low: 1,   high: 2}
+  workload_tflops:     {dist: lognormal, mean: 3.0,  sigma: 1.0}
+  num_input_files:     {dist: randint,   low: 1,     high: 3}
+  output_file_size_gb: {dist: uniform,   low: 0.1,   high: 2.0}
+  inter_arrival_s:     {dist: lognormal, mean: 0.8,  sigma: 0.7}
+  num_cpus_required:   1
+
+site_initialization:
+  seed_files_per_tier:
+    Tier1: 25   # primary data hubs
+    Tier2: 5    # mid-tier caches
+    Tier3: 1    # small opportunistic cache

@@ -1,0 +1,136 @@
+storage:
+  tape_bandwidth: 500          # MB/s — restore speed from tape per site
+  tape_bandwidth_unit: MB/s
+  eviction:
+    age_s: 3600                # normalize file age by 1 h when scoring
+    extra_replicas: 0.5        # bonus per extra replica elsewhere
+    downstream: 3.0            # penalty per queued job needing the file
+    recompute: 1.5             # multiply by DataFile.recomputation_cost
+    no_tape_penalty: 1000.0    # protect non-tape-archived files strongly
+    warm_threshold_s: 3600     # HOT → WARM after 1 h without access
+    cold_threshold_s: 86400    # WARM → COLD after 24 h without access
+
+sites:
+  - id: CERN
+    num_cpus: 32
+    cpu_speed_gflops: 22.0
+    disk_capacity: 1000000 TB  # effectively unlimited — eviction/replication out of scope
+
+  - id: BNL
+    num_cpus: 16
+    cpu_speed_gflops: 18.0
+    disk_capacity: 1000000 TB  # effectively unlimited — eviction/replication out of scope
+
+  - id: IN2P3
+    num_cpus: 24
+    cpu_speed_gflops: 15.0
+    disk_capacity: 1000000 TB  # effectively unlimited — eviction/replication out of scope
+
+  - id: TRIUMF
+    num_cpus: 12
+    cpu_speed_gflops: 12.0
+    disk_capacity: 1000000 TB  # effectively unlimited — eviction/replication out of scope
+
+  - id: TOKYO
+    num_cpus: 20
+    cpu_speed_gflops: 20.0
+    disk_capacity: 1000000 TB  # effectively unlimited — eviction/replication out of scope
+
+network:
+  bandwidth_unit: MB/s
+  lan_multiplier: 10      # LAN is 10× the max WAN bandwidth of that site
+
+  wan_bandwidth_matrix:
+    - [   0, 120,   151,     80,    40]   # CERN
+    - [ 120,   0,    90,    100,    35]   # BNL
+    - [ 151,  90,     0,     70,    45]   # IN2P3
+    - [  80, 100,    70,      0,    30]   # TRIUMF
+    - [  40,  35,    45,     30,     0]   # TOKYO
+
+
+data_files:
+  - id: daod_ttbar_001
+    size: 3.2 GB
+    initial_locations: [CERN, BNL]
+
+  - id: daod_ttbar_002
+    size: 4.7 GB
+    initial_locations: [CERN, IN2P3]
+
+  - id: daod_higgs_001
+    size: 2.1 GB
+    initial_locations: [BNL, TRIUMF]
+
+  - id: daod_higgs_002
+    size: 5.0 GB
+    initial_locations: [CERN]
+
+  - id: daod_wjets_001
+    size: 1.8 GB
+    initial_locations: [TOKYO, IN2P3]
+
+  - id: daod_wjets_002
+    size: 3.5 GB
+    initial_locations: [BNL, TOKYO]
+
+  - id: daod_minbias_001
+    size: 0.9 GB
+    initial_locations: [CERN, BNL, IN2P3, TRIUMF, TOKYO]  # already replicated
+
+jobs:
+  - id: job_0001
+    workload: 8 TFLOPs
+    input_files: [daod_ttbar_001]
+    output_files: [out_0001]
+    output_file_size: 512 MB
+    submit_time: 0.0
+
+  - id: job_0002
+    workload: 12 TFLOPs
+    input_files: [daod_ttbar_002]
+    output_files: [out_0002]
+    output_file_size: 1 GB
+    submit_time: 5.0
+
+  - id: job_0003
+    workload: 6 TFLOPs
+    input_files: [daod_higgs_001]
+    output_files: [out_0003]
+    output_file_size: 256 MB
+    submit_time: 10.0
+
+  - id: job_0004
+    workload: 15 TFLOPs
+    input_files: [daod_higgs_002]
+    output_files: [out_0004]
+    output_file_size: 1.5 GB
+    submit_time: 15.0
+
+  - id: job_0005
+    workload: 4 TFLOPs
+    input_files: [daod_wjets_001]
+    output_files: [out_0005]
+    output_file_size: 200 MB
+    submit_time: 20.0
+
+  - id: job_0006
+    workload: 7 TFLOPs
+    input_files: [daod_wjets_002]
+    output_files: [out_0006]
+    output_file_size: 400 MB
+    submit_time: 25.0
+
+  - id: job_0007
+    workload: 3 TFLOPs
+    input_files: [daod_minbias_001]
+    output_files: [out_0007]
+    output_file_size: 150 MB
+    submit_time: 0.0
+    num_cpus_required: 2     # example multi-core job
+
+  - id: job_0008
+    workload: 10 TFLOPs
+    input_files: [daod_ttbar_001, daod_higgs_001]
+    output_files: [out_0008]
+    output_file_size: 800 MB
+    submit_time: 30.0
